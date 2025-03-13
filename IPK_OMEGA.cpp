@@ -5,7 +5,7 @@
 #include <unistd.h>  // pro getopt
 #include <cstring>   // pro strncpy
 #include "NetworkInterface.h"
-
+#include "PortRangeParser.h"
 
 bool validateArguments(int argc, char* argv[]) {
     if (argc < 3) {
@@ -15,13 +15,11 @@ bool validateArguments(int argc, char* argv[]) {
     return true;
 }
 
-
 void processArguments(int argc, char* argv[]) {
     std::vector<std::string> interfaces;
     bool interfaceProvided = false;
     std::string interfaceName;
-    std::vector<int> tcpPorts;
-    std::vector<int> udpPorts;
+    std::string portRange;  // Proměnná pro uchování portů
     int timeout = 5000;
 
     for (int i = 1; i < argc; ++i) {
@@ -40,16 +38,15 @@ void processArguments(int argc, char* argv[]) {
         }
         else if (arg == "--pt" || arg == "-t") {
             if (i + 1 < argc) {
-                std::string ports = argv[i + 1];
-               
-                std::cout << "TCP Ports: " << ports << std::endl;
+                portRange = argv[i + 1];  // Uložení portů do proměnné
+                std::cout << "TCP Ports: " << portRange << std::endl;
                 i++;
             }
         }
         else if (arg == "--pu" || arg == "-u") {
             if (i + 1 < argc) {
-                std::string ports = argv[i + 1];
-                std::cout << "UDP Ports: " << ports << std::endl;
+                portRange = argv[i + 1];  // Uložení UDP portů
+                std::cout << "UDP Ports: " << portRange << std::endl;
                 i++;
             }
         }
@@ -62,7 +59,7 @@ void processArguments(int argc, char* argv[]) {
         }
     }
 
-  
+    // Pokud nebyl zadaný interface, vybíráme první dostupný
     if (!interfaceProvided) {
         interfaces = NetworkInterface::getAvailableInterfaces();
         if (interfaces.empty()) {
@@ -72,16 +69,22 @@ void processArguments(int argc, char* argv[]) {
         NetworkInterface::selectInterface(interfaces);
     }
 
-  
+    // Zpracování portRange pro TCP/UDP
+    if (!portRange.empty()) {
+        std::vector<int> ports = PortRangeParser::parsePortRanges(portRange);
+        std::cout << "Selected Ports: ";
+        for (int port : ports) {
+            std::cout << port << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 int main(int argc, char* argv[]) {
-   
     if (!validateArguments(argc, argv)) {
         return 1;
     }
 
     processArguments(argc, argv);
-
     return 0;
 }
