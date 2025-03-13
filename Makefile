@@ -1,28 +1,15 @@
-# Definice kompilátoru a příkazů
+# Nastavení proměnných
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g
+CXXFLAGS = -std=c++11  
+SOURCES = IPK_OMEGA.cpp NetworkInterface.cpp PortRangeParser.cpp TCPscanner.cpp UDPscanner.cpp Packetsender.cpp ResultFormatter.cpp  
+EXEC = ipk-l4-scan  
 
-# Seznam všech zdrojových souborů
-SRC = IPK_OMEGA.cpp NetworkInterface.cpp Packetsender.cpp PortRangeParser.cpp ResultFormatter.cpp TCPScanner.cpp UDPScanner.cpp scanner.cpp
+# Kompilace projektu
+all: $(EXEC)
 
-# Seznam objektových souborů 
-OBJ = $(SRC:.cpp=.o)
+$(EXEC): $(SOURCES)
+	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(EXEC)
 
-# Název výsledného binárního souboru
-TARGET = ipk-l4-scan
-
-
-# Pravidlo pro kompilaci
-$(TARGET): $(OBJ)
-	$(CXX) $(OBJ) -o $(TARGET)
-
-# Pravidlo pro vytvoření objektového souboru
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-
+# Čistící cíl
 clean:
-	rm -f $(OBJ) $(TARGET)
-
-
-rebuild: clean $(TARGET)
+	rm -f $(EXEC)
