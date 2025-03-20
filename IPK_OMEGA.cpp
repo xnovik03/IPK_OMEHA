@@ -10,63 +10,9 @@
 #include "PortRangeParser.h"
 #include "TCPscanner.h"
 #include "UDPscanner.h"
+#include "Params.h"
 
-// Validace argumentů
-bool validateArguments(int argc, char* argv[]) {
-    if (argc < 3) {
-        std::cout << "ERROR: Invalid number of arguments. Usage: ./ipk-l4-scan -i <interface> -t <port>" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-// Zpracování argumentů z příkazové řádky
-void processArguments(int argc, char* argv[], std::string &interfaceName, std::string &tcpPorts, std::string &udpPorts, int &timeout, std::string &host) {
-    bool interfaceProvided = false;
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "-i" || arg == "--interface") {
-            if (i + 1 < argc) {
-                interfaceName = argv[i + 1];
-                std::cout << "Selected interface: " << interfaceName << std::endl;
-                interfaceProvided = true;
-                i++; 
-            }
-            else {
-                std::cout << "ERROR: Missing interface name" << std::endl;
-                return;
-            }
-        }
-        else if (arg == "--pt" || arg == "-t") {
-            if (i + 1 < argc) {
-                tcpPorts = argv[i + 1];
-                std::cout << "TCP Ports: " << tcpPorts << std::endl;
-                i++;
-            }
-        }
-        else if (arg == "--pu" || arg == "-u") {
-            if (i + 1 < argc) {
-                udpPorts = argv[i + 1];
-                std::cout << "UDP Ports: " << udpPorts << std::endl;
-                i++;
-            }
-        }
-        else if (arg == "--wait" || arg == "-w") {
-            if (i + 1 < argc) {
-                timeout = std::stoi(argv[i + 1]);
-                std::cout << "Timeout set to: " << timeout << " ms" << std::endl;
-                i++;
-            }
-        }
-        else {
-            // Hostname or IP address (last argument)
-            host = argv[i];
-        }
-    }
-    if (!interfaceProvided) {
-        std::cout << "ERROR: Network interface not provided" << std::endl;
-    }
-}
+std::vector<std::string> resolveHostToIP(const std::string &host);
 
 // Funkce pro získání IP adresy z hostname
 std::vector<std::string> resolveHostToIP(const std::string &host) {
@@ -103,38 +49,91 @@ std::vector<std::string> resolveHostToIP(const std::string &host) {
     return ipAddresses;
 }
 
+
+// Zpracování argumentů z příkazové řádky
+void processArguments(int argc, char* argv[], Params &params) {
+    bool interfaceProvided = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "-i" || arg == "--interface") {
+            if (i + 1 < argc) {
+                params.setInterfaceName(argv[i + 1]);
+                std::cout << "Selected interface: " << params.interfaceName << std::endl;
+                interfaceProvided = true;
+                i++;
+            } else {
+                std::cout << "ERROR: Missing interface name" << std::endl;
+                return;
+            }
+        }
+        else if (arg == "--pt" || arg == "-t") {
+            if (i + 1 < argc) {
+                params.setTcpPorts(argv[i + 1]);
+                std::cout << "TCP Ports: " << params.tcpPorts << std::endl;
+                i++;
+            }
+        }
+        else if (arg == "--pu" || arg == "-u") {
+            if (i + 1 < argc) {
+                params.setUdpPorts(argv[i + 1]);
+                std::cout << "UDP Ports: " << params.udpPorts << std::endl;
+                i++;
+            }
+        }
+        else if (arg == "--wait" || arg == "-w") {
+            if (i + 1 < argc) {
+                params.setTimeout(std::stoi(argv[i + 1]));
+                std::cout << "Timeout set to: " << params.timeout << " ms" << std::endl;
+                i++;
+            }
+        }
+        else {
+            // Hostname or IP address 
+            params.setHost(argv[i]);
+        }
+    }
+    if (!interfaceProvided) {
+        std::cout << "ERROR: Network interface not provided" << std::endl;
+    }
+}
+
 // Hlavní funkce
 int main(int argc, char* argv[]) {
-    if (!validateArguments(argc, argv)) {
+    Params params;  // Vytvoření instance Params
+
+    if (argc < 3) {
+        std::cout << "ERROR: Invalid number of arguments. Usage: ./ipk-l4-scan -i <interface> -t <port>" << std::endl;
         return 1;
     }
 
-    std::string interfaceName, tcpPorts, udpPorts, host;
-    int timeout = 5000;
+    // Zpracování argumentů
+    processArguments(argc, argv, params);
 
-    // Zpracování argumentu
-    processArguments(argc, argv, interfaceName, tcpPorts, udpPorts, timeout, host);
+    // Validace parametrů
+    if (!params.isValid()) {
+        return 1;
+    }
 
     // Získání IP adres z hostname
-    std::vector<std::string> ipAddresses = resolveHostToIP(host);
+    std::vector<std::string> ipAddresses = resolveHostToIP(params.host);
     if (ipAddresses.empty()) {
-        std::cerr << "ERROR: No IP addresses found for hostname " << host << std::endl;
+        std::cerr << "ERROR: No IP addresses found for hostname " << params.host << std::endl;
         return 1;
     }
 
     // Převod TCP portů na čísla
-    std::vector<int> tcpPortNumbers = PortRangeParser::parsePortRanges(tcpPorts);
+    std::vector<int> tcpPortNumbers = PortRangeParser::parsePortRanges(params.tcpPorts);
     for (const std::string &ip : ipAddresses) {
         for (int port : tcpPortNumbers) {
-            TCPScanner::scanPort(ip, port);  // Místo localhost použijte IP
+            TCPScanner::scanPort(ip, port);  
         }
     }
 
     // Převod UDP portů na čísla
-    std::vector<int> udpPortNumbers = PortRangeParser::parsePortRanges(udpPorts);
+    std::vector<int> udpPortNumbers = PortRangeParser::parsePortRanges(params.udpPorts);
     for (const std::string &ip : ipAddresses) {
         for (int port : udpPortNumbers) {
-            UDPScanner::scanPort(ip, port);  // Místo localhost použijte IP
+            UDPScanner::scanPort(ip, port); 
         }
     }
 
