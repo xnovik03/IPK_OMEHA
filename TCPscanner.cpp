@@ -8,15 +8,16 @@
 #include <netdb.h>
 #include "TCPscanner.h"
 #include "Packetsender.h"
+#include "ResultFormatter.h" 
 
 // Implementace metody scanPort
-void TCPScanner::scanPort(const std::string &ip, int port) {
-    // Místo implementace odesílání paketů voláme Packetsender
+void TCPScanner::scanPort(const std::string &ip, int port)
+{
     bool result = Packetsender::sendTcpPacket(ip, port);  // Odeslání TCP SYN paketu
 
     if (result) {
-        std::cout << ip << " " << port << " tcp open" << std::endl;
+        ResultFormatter::formatTcpResult(ip, port, "open");
     } else {
-        std::cout << ip << " " << port << " tcp closed" << std::endl;
+        ResultFormatter::formatTcpResult(ip, port, "closed");
     }
 }
