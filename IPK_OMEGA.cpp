@@ -55,6 +55,21 @@ void processArguments(int argc, char* argv[], Params &params) {
     bool interfaceProvided = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+         
+        // Zpracování --help nebo -h pro nápovědu
+        if (arg == "-h" || arg == "--help") {
+            std::cout << "Usage: ./ipk-l4-scan [-i interface | --interface interface] "
+                      << "[--pu port-ranges | --pt port-ranges | -u port-ranges | -t port-ranges] "
+                      << "[-w timeout] [hostname | ip-address]" << std::endl;
+            std::cout << "-i, --interface        Network interface to scan through" << std::endl;
+            std::cout << "-t, --pt               TCP port ranges to scan (e.g., --pt 22,23,24)" << std::endl;
+            std::cout << "-u, --pu               UDP port ranges to scan" << std::endl;
+            std::cout << "-w, --wait             Timeout for each port scan in milliseconds" << std::endl;
+            std::cout << "hostname               Hostname or IP address to scan" << std::endl;
+            exit(0);  // Ukončí program po zobrazení nápovědy
+        }
+
+
         if (arg == "-i" || arg == "--interface") {
             if (i + 1 < argc) {
                 params.setInterfaceName(argv[i + 1]);
