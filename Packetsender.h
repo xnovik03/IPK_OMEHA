@@ -1,16 +1,17 @@
 #pragma once
 #include <string>
-#include <netinet/in.h>
 
-class Packetsender
-{
+class Packetsender {
 public:
-    // Metoda pro odeslání SYN paketu pro TCP skenování
+    // Přidejte enum pro stav portu
+    enum PortState {
+        OPEN,
+        CLOSED
+    
+    };
+
+    // Deklarace metod
     static bool sendTcpPacket(const std::string &ip, int port);
-
-     // Výpočet checksumu pro IP a TCP hlavičky
     static unsigned short checksum(unsigned short *buf, int len);
-
-    // Metoda pro odeslání UDP paketu
-    static bool sendUdpPacket(const std::string &ip, int port);
+    static PortState sendUdpPacket(const std::string &ip, int port);
 };
