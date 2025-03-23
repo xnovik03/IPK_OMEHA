@@ -8,49 +8,86 @@
 #include <netinet/ip.h>    // For IP header
 #include <netinet/tcp.h>   // For TCP header (tcphdr and flags like TH_SYN)
 #include <netinet/ip_icmp.h>
-#include "ResultFormatter.h" 
 #include <netdb.h>
 #include <errno.h>
 #include <linux/errqueue.h>
 
-bool Packetsender::sendTcpPacket(const std::string &ip, int port) {
+acketsender::PortState Packetsender::sendTcpPacket(const std::string &ip, int port) {
     int sockfd;
     struct sockaddr_in dest;
     struct sockaddr_in6 dest6;
 
-    if (ip.find(":") != std::string::npos) {  // Kontrola pro IPv6 adresy
-        sockfd = socket(AF_INET6, SOCK_STREAM, 0);  // IPv6 socket
+    bool isIPv6 = ip.find(":") != std::string::npos;
+
+    // IPv6
+    if (isIPv6) {
+        sockfd = socket(AF_INET6, SOCK_STREAM, 0);
         if (sockfd == -1) {
             std::cerr << "Socket creation failed for IPv6" << std::endl;
-            return false;
+            return FILTERED;
         }
+
+        struct timeval timeout;
+        timeout.tv_sec = 2;
+        timeout.tv_usec = 0;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
         dest6.sin6_family = AF_INET6;
         dest6.sin6_port = htons(port);
         inet_pton(AF_INET6, ip.c_str(), &dest6.sin6_addr);
-        // Dalsi nastavovani pro IPv6, napr. dest6.sin6_scope_id pokud je potreba
+
         if (connect(sockfd, (struct sockaddr *)&dest6, sizeof(dest6)) == 0) {
             close(sockfd);
-            return true;
-        }
-    } else {  // IPv4
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd == -1) {
-            std::cerr << "Socket creation failed for IPv4" << std::endl;
-            return false;
-        }
-        dest.sin_family = AF_INET;
-        dest.sin_port = htons(port);
-        inet_pton(AF_INET, ip.c_str(), &dest.sin_addr);
-        if (connect(sockfd, (struct sockaddr *)&dest, sizeof(dest)) == 0) {
+            return OPEN;
+        } else {
+            PortState result;
+            switch (errno) {
+                case ECONNREFUSED: result = CLOSED; break;
+                case ETIMEDOUT:
+                case EHOSTUNREACH:
+                case ENETUNREACH: result = FILTERED; break;
+                default: result = FILTERED; break;
+            }
             close(sockfd);
-            return true;
+            return result;
         }
     }
 
-    std::cerr << "Failed to connect to " << ip << ":" << port << std::endl;
-    close(sockfd);
-    return false;
+    // IPv4
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        std::cerr << "Socket creation failed for IPv4" << std::endl;
+        return FILTERED;
+    }
+
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(port);
+    inet_pton(AF_INET, ip.c_str(), &dest.sin_addr);
+
+    if (connect(sockfd, (struct sockaddr *)&dest, sizeof(dest)) == 0) {
+        close(sockfd);
+        return OPEN;
+    } else {
+        PortState result;
+        switch (errno) {
+            case ECONNREFUSED: result = CLOSED; break;
+            case ETIMEDOUT:
+            case EHOSTUNREACH:
+            case ENETUNREACH: result = FILTERED; break;
+            default: result = FILTERED; break;
+        }
+        close(sockfd);
+        return result;
+    }
 }
+
 
 
 // Funkce pro odeslání UDP paketu (podpora IPv4 a IPv6)
