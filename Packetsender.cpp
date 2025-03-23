@@ -53,16 +53,22 @@ bool Packetsender::sendTcpPacket(const std::string &ip, int port) {
 }
 
 
+// Funkce pro odeslání UDP paketu (podpora IPv4 a IPv6)
 Packetsender::PortState Packetsender::sendUdpPacket(const std::string &ip, int port) {
     int sockfd;
     int result;
     char msg[] = "Test";
     char buffer[512];
     struct addrinfo hints, *res;
-    PortState state = OPEN;  // Výchozí: pokud nedostaneme žádnou chybu, port považujeme za open
+    PortState state = OPEN;  // Výchozí: pokud nedostaneme ICMP chybovou zprávu, port považujeme za open
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;  // Zde předpokládáme IPv4 
+    // Nastavíme hints.ai_family podle formátu IP adresy:
+    if (ip.find(":") != std::string::npos) {
+        hints.ai_family = AF_INET6;  // IPv6
+    } else {
+        hints.ai_family = AF_INET;   // IPv4
+    }
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
 
@@ -79,13 +85,22 @@ Packetsender::PortState Packetsender::sendUdpPacket(const std::string &ip, int p
         return CLOSED;
     }
 
-    // Nastavení možnosti pro přijímání ICMP chyb
+    // Nastavení socketové možnosti pro přijímání ICMP chyb:
     int opt = 1;
-    if (setsockopt(sockfd, IPPROTO_IP, IP_RECVERR, &opt, sizeof(opt)) < 0) {
-        std::cerr << "setsockopt(IP_RECVERR) failed" << std::endl;
-        close(sockfd);
-        freeaddrinfo(res);
-        return CLOSED;
+    if (res->ai_family == AF_INET6) {
+        if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_RECVERR, &opt, sizeof(opt)) < 0) {
+            std::cerr << "setsockopt(IPV6_RECVERR) failed" << std::endl;
+            close(sockfd);
+            freeaddrinfo(res);
+            return CLOSED;
+        }
+    } else {
+        if (setsockopt(sockfd, IPPROTO_IP, IP_RECVERR, &opt, sizeof(opt)) < 0) {
+            std::cerr << "setsockopt(IP_RECVERR) failed" << std::endl;
+            close(sockfd);
+            freeaddrinfo(res);
+            return CLOSED;
+        }
     }
 
     // Nastavení timeoutu pro příjem (2 sekundy)
@@ -97,13 +112,14 @@ Packetsender::PortState Packetsender::sendUdpPacket(const std::string &ip, int p
     // Odeslání UDP paketu
     result = sendto(sockfd, msg, sizeof(msg), 0, res->ai_addr, res->ai_addrlen);
     if (result < 0) {
-        std::cerr << "Error sending UDP packet to " << ip << ":" << port << std::endl;
+        std::cerr << "Error sending UDP packet to " << ip << ":" << port 
+                  << " (" << strerror(errno) << ")" << std::endl;
         close(sockfd);
         freeaddrinfo(res);
         return CLOSED;
     }
 
-    // Zkusíme načíst odpověď z chybové fronty (MSG_ERRQUEUE)
+    // Načtení odpovědi z chybové fronty (MSG_ERRQUEUE)
     struct msghdr msg_hdr;
     struct iovec iov;
     char control[512];
@@ -117,31 +133,43 @@ Packetsender::PortState Packetsender::sendUdpPacket(const std::string &ip, int p
     msg_hdr.msg_controllen = sizeof(control);
 
     result = recvmsg(sockfd, &msg_hdr, MSG_ERRQUEUE);
-if (result < 0) {
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // Nebyla obdržena žádná chybová zpráva – port považujeme za open
-        state = OPEN;
+    if (result < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // Nebyla obdržena žádná chybová zpráva – port považujeme za open
+            state = OPEN;
+        } else {
+            std::cerr << "recvmsg(MSG_ERRQUEUE) error: " << strerror(errno) << std::endl;
+            state = CLOSED;
+        }
     } else {
-        std::cerr << "recvmsg(MSG_ERRQUEUE) error: " << strerror(errno) << std::endl;
-        state = CLOSED;
-    }
-} else {
-    // Projdeme řídící zprávy a zjistíme, zda byla ICMP odpověď "port unreachable"
-    struct cmsghdr *cmsg;
-    bool icmp_received = false;
-    for (cmsg = CMSG_FIRSTHDR(&msg_hdr); cmsg != nullptr; cmsg = CMSG_NXTHDR(&msg_hdr, cmsg)) {
-        if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_RECVERR) {
-            struct sock_extended_err *sock_err = (struct sock_extended_err *) CMSG_DATA(cmsg);
-            if (sock_err && sock_err->ee_type == ICMP_UNREACH && sock_err->ee_code == ICMP_UNREACH_PORT) {
-                icmp_received = true;
-                break;
+        // Projdeme řídící zprávy a zjistíme, zda byla ICMP odpověď "port unreachable"
+        struct cmsghdr *cmsg;
+        bool icmp_received = false;
+        for (cmsg = CMSG_FIRSTHDR(&msg_hdr); cmsg != nullptr; cmsg = CMSG_NXTHDR(&msg_hdr, cmsg)) {
+            if (res->ai_family == AF_INET6) {
+                if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_RECVERR) {
+                    struct sock_extended_err *sock_err = (struct sock_extended_err *)CMSG_DATA(cmsg);
+                    if (sock_err && sock_err->ee_type == ICMP_UNREACH && sock_err->ee_code == ICMP_UNREACH_PORT) {
+                        icmp_received = true;
+                        break;
+                    }
+                }
+            } else {
+                if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_RECVERR) {
+                    struct sock_extended_err *sock_err = (struct sock_extended_err *)CMSG_DATA(cmsg);
+                    if (sock_err && sock_err->ee_type == ICMP_UNREACH && sock_err->ee_code == ICMP_UNREACH_PORT) {
+                        icmp_received = true;
+                        break;
+                    }
+                }
             }
         }
+        state = icmp_received ? CLOSED : OPEN;
     }
-    state = icmp_received ? CLOSED : OPEN;
-}
 
     close(sockfd);
     freeaddrinfo(res);
     return state;
 }
+
+   
