@@ -1,5 +1,4 @@
 
-
 # IPK Project 1 – OMEGA: L4 Scanner
 
 ## Popis
@@ -65,5 +64,5 @@ Například:
 127.0.0.1 53 udp closed
 127.0.0.1 143 tcp filtered
 ```
-```
+
 
