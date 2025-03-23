@@ -1,17 +1,17 @@
 #pragma once
 #include <string>
 
-class Packetsender {
+lass Packetsender {
 public:
     // Přidejte enum pro stav portu
     enum PortState {
         OPEN,
-        CLOSED
-    
+        CLOSED,
+        FILTERED
     };
 
     // Deklarace metod
-    static bool sendTcpPacket(const std::string &ip, int port);
+    static Packetsender::PortState sendTcpPacket(const std::string &ip, int port);
     static unsigned short checksum(unsigned short *buf, int len);
     static PortState sendUdpPacket(const std::string &ip, int port);
 };
