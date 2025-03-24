@@ -57,17 +57,23 @@ void processArguments(int argc, char* argv[], Params &params) {
         std::string arg = argv[i];
        
 
-        if (arg == "-i" || arg == "--interface") {
+         if (arg == "-i" || arg == "--interface") {
             if (i + 1 < argc) {
                 params.setInterfaceName(argv[i + 1]);
-                std::cout << "Selected interface: " << params.interfaceName << std::endl;
                 interfaceProvided = true;
                 i++;
             } else {
-                std::cout << "ERROR: Missing interface name" << std::endl;
-                return;
+                std::cout << "Available interfaces:" << std::endl;
+                
+                // Získání seznamu dostupných síťových rozhraní
+                NetworkInterface netInterface;
+                std::vector<std::string> interfaces = netInterface.getAvailableInterfaces();
+                for (const auto& iface : interfaces) {
+                    std::cout << iface << std::endl;
+                }
+                return;  
             }
-        }
+        } 
         else if (arg == "--pt" || arg == "-t") {
             if (i + 1 < argc) {
                 params.setTcpPorts(argv[i + 1]);
