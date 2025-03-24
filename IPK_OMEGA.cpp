@@ -71,21 +71,18 @@ void processArguments(int argc, char* argv[], Params &params) {
         else if (arg == "--pt" || arg == "-t") {
             if (i + 1 < argc) {
                 params.setTcpPorts(argv[i + 1]);
-                std::cout << "TCP Ports: " << params.tcpPorts << std::endl;
                 i++;
             }
         }
         else if (arg == "--pu" || arg == "-u") {
             if (i + 1 < argc) {
                 params.setUdpPorts(argv[i + 1]);
-                std::cout << "UDP Ports: " << params.udpPorts << std::endl;
                 i++;
             }
         }
         else if (arg == "--wait" || arg == "-w") {
             if (i + 1 < argc) {
                 params.setTimeout(std::stoi(argv[i + 1]));
-                std::cout << "Timeout set to: " << params.timeout << " ms" << std::endl;
                 i++;
             }
         }
