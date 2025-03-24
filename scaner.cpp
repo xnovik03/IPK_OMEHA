@@ -41,11 +41,7 @@ void scaner::parseArguments(int argc, char* argv[]) {
         return;
     }
 
-    cout << "Selected interface: " << interface << endl;
-    cout << "TCP Ports: " << tcpPorts << endl;
-    cout << "UDP Ports: " << udpPorts << endl;
-    cout << "Timeout: " << timeout << " ms" << endl;
-    cout << "Host: " << host << endl;
+   
 
     // Získání IP adres pro zadaný host
     vector<string> ipAddresses = resolveHostToIP(host);
