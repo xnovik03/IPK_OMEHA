@@ -5,42 +5,44 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include <netinet/ip.h>    // For IP header
-#include <netinet/tcp.h>   // For TCP header (tcphdr and flags like TH_SYN)
+#include <netinet/ip.h>    // Pro IP header
+#include <netinet/tcp.h>   // Pro TCP header (tcphdr and flags jako TH_SYN)
 #include <netinet/ip_icmp.h>
 #include <netdb.h>
 #include <errno.h>
 #include <linux/errqueue.h>
 
-acketsender::PortState Packetsender::sendTcpPacket(const std::string &ip, int port) {
+Packetsender::PortState Packetsender::sendTcpPacket(const std::string &ip, int port) {
     int sockfd;
     struct sockaddr_in dest;
     struct sockaddr_in6 dest6;
-
+    // Zjistíme, zda jde o IPv6 adresu (obsahuje znak ':')
     bool isIPv6 = ip.find(":") != std::string::npos;
 
     // IPv6
     if (isIPv6) {
+        // Vytvoření socketu pro IPv6
         sockfd = socket(AF_INET6, SOCK_STREAM, 0);
         if (sockfd == -1) {
             std::cerr << "Socket creation failed for IPv6" << std::endl;
             return FILTERED;
         }
-
+        // Nastavení timeoutu pro send a receive
         struct timeval timeout;
         timeout.tv_sec = 2;
         timeout.tv_usec = 0;
         setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
         setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
+        // Naplnění struktury sockaddr_in6
         dest6.sin6_family = AF_INET6;
         dest6.sin6_port = htons(port);
         inet_pton(AF_INET6, ip.c_str(), &dest6.sin6_addr);
-
+        // Pokus o připojení
         if (connect(sockfd, (struct sockaddr *)&dest6, sizeof(dest6)) == 0) {
             close(sockfd);
             return OPEN;
         } else {
+            // Zjištění důvodu selhání pro určení stavu portu
             PortState result;
             switch (errno) {
                 case ECONNREFUSED: result = CLOSED; break;
@@ -60,7 +62,7 @@ acketsender::PortState Packetsender::sendTcpPacket(const std::string &ip, int po
         std::cerr << "Socket creation failed for IPv4" << std::endl;
         return FILTERED;
     }
-
+    // Timeouty stejně jako u IPv6
     struct timeval timeout;
     timeout.tv_sec = 2;
     timeout.tv_usec = 0;
@@ -70,11 +72,12 @@ acketsender::PortState Packetsender::sendTcpPacket(const std::string &ip, int po
     dest.sin_family = AF_INET;
     dest.sin_port = htons(port);
     inet_pton(AF_INET, ip.c_str(), &dest.sin_addr);
-
+    // Pokus o připojení
     if (connect(sockfd, (struct sockaddr *)&dest, sizeof(dest)) == 0) {
         close(sockfd);
         return OPEN;
     } else {
+        // Zjištění důvodu selhání
         PortState result;
         switch (errno) {
             case ECONNREFUSED: result = CLOSED; break;
