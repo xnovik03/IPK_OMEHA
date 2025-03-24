@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <cstring>
+#include <set>
 
 // Vrátí seznam dostupných síťových rozhraní 
 std::vector<std::string> NetworkInterface::getAvailableInterfaces() {
