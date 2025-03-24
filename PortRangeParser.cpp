@@ -13,6 +13,7 @@ std::vector<int> PortRangeParser::parsePortRanges(const std::string& portRange) 
     return ports;
 }
 
+// Přidá do vektoru porty ze zadaného rozsahu nebo jednoho portu ve stringu.
 void PortRangeParser::processRange(const std::string& range, std::vector<int>& ports) {
     size_t dashPos = range.find('-');
     if (dashPos != std::string::npos) {
