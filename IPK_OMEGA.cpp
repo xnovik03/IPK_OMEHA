@@ -26,6 +26,8 @@ std::vector<std::string> resolveHostToIP(const std::string &host) {
 
     if ((status = getaddrinfo(host.c_str(), nullptr, &hints, &res)) != 0) {
         std::cerr << "ERROR: Unable to resolve hostname: " << gai_strerror(status) << std::endl;
+        std::cerr << "ERROR: No IP addresses found for hostname " << host << std::endl;
+
         return ipAddresses;
     }
 
