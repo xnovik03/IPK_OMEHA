@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-lass Packetsender {
+class Packetsender {
 public:
     // Přidejte enum pro stav portu
     enum PortState {
