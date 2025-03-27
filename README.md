@@ -50,7 +50,7 @@ UDP je bezspojový protokol a běžně neodpovídá na pakety. Stav portu se ur�
 - TCP: analýza `connect()` a `errno`
 
 ## 4. UML diagram
-Zde vložte UML diagram jako obrázek:
+
 
 ![UML diagram](uml_diagram.png)
 
