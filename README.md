@@ -52,9 +52,8 @@ UDP je bezspojový protokol a běžně neodpovídá na pakety. Stav portu se ur�
 ## 4. UML diagram
 Zde vložte UML diagram jako obrázek:
 
-```md
 ![UML diagram](uml_diagram.png)
-```
+
 
 ## 5. Testování a validace
 Testováno na Ubuntu 22.04 s jádrem 5.15. Provedeny následující testy:
