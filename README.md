@@ -131,17 +131,17 @@ make clean
 ```
 ## 8. Bibliografie
 - [RFC 793] Transmission Control Protocol – https://www.ietf.org/rfc/rfc793.txt  
-- https://sites.uclouvain.be/SystInfo/usr/include/netinet/ip_icmp.h.html  
-- https://pubs.opengroup.org/onlinepubs/7908799/xns/arpainet.h.html  
-- https://svn.nmap.org/nmap/docs/nmap.usage.txt  
-- https://nmap.org/  
-- https://man7.org/linux/man-pages/man2/recvmsg.2.html  
-- https://pubs.opengroup.org/onlinepubs/009695199/basedefs/netdb.h.html  
-- https://dev.to/b0r/nmap-go-implementation-tcp-port-scan-179b  
-- https://test-ipv6.com/  
-- https://www.siteground.com/kb/ipv4-vs-ipv6/  
-- https://how.dev/answers/how-to-implement-tcp-sockets-in-c  
-- https://man7.org/linux/man-pages/man3/inet_ntop.3.html  
+- https://sites.uclouvain.be/SystInfo/usr/include/netinet/ip_icmp.h.html (Referenční dokumentace ke struktuře ICMP hlaviček, použito při interpretaci ICMP odpovědí pro UDP scanning.)  
+- https://pubs.opengroup.org/onlinepubs/7908799/xns/arpainet.h.html (Popis funkcí a struktur v <arpa/inet.h>, např. inet_ntop, použitých pro práci s IP adresami.)  
+- https://svn.nmap.org/nmap/docs/nmap.usage.txt (Dokumentace nástroje nmap pro porovnání výstupů při testování skeneru.)  
+- https://nmap.org/
+- https://man7.org/linux/man-pages/man2/recvmsg.2.html (Manuálová stránka k recvmsg, použitá při implementaci čtení ICMP chyb z chybové fronty (pro UDP scan).)  
+- https://pubs.opengroup.org/onlinepubs/009695199/basedefs/netdb.h.html (Popis funkcí jako getaddrinfo z <netdb.h>, použito při získávání IP adresy z hostname.)  
+- https://dev.to/b0r/nmap-go-implementation-tcp-port-scan-179b (Inspirace pro logiku TCP SYN scanu v jiných implementacích, sloužilo pro ověření konceptu.)  
+- https://test-ipv6.com/ (Pro testování podpory a dostupnosti IPv6 připojení.)  
+- https://www.siteground.com/kb/ipv4-vs-ipv6/#Transitioning_from_IPv4_to_IPv6 (Teoretický přehled rozdílů mezi IPv4 a IPv6, pro shrnutí znalostí v dokumentaci.)  
+- https://how.dev/answers/how-to-implement-tcp-sockets-in-c (Ukázky implementace TCP klienta v C, použito jako inspirace při tvorbě vlastních socketů.)  
+- https://man7.org/linux/man-pages/man3/inet_ntop.3.html (Manuálová stránka pro funkci inet_ntop, použitá k převodu IP adresy na řetězec při výpisu) 
 - Learning Kali Linux: TCP, UDP and ICMP Scanning - https://www.youtube.com/watch?v=AY5jeXV3w6Q
 - Nmap - UDP Scanning - https://www.youtube.com/watch?v=FOy7rkI5IWg
 - NMAP Basics Tutorial for Kali Linux Beginners - https://www.youtube.com/watch?v=W7076RPIgfQ
